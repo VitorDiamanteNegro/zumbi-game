@@ -1,1 +1,41 @@
-
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zombie Survival</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <div id="gameStartScreen" class="screen">
+            <h1>Zombie Survival</h1>
+            <p>Sobreviva às ondas de zumbis!</p>
+            <button id="startButton">Iniciar Jogo</button>
+            <div class="instructions">
+                <h3>Instruções:</h3>
+                <p>Use o mouse para mirar e clique para atirar</p>
+                <p>Não deixe os zumbis chegarem perto de você!</p>
+                <p>Cada zumbi eliminado dá pontos</p>
+            </div>
+        </div>
+        
+        <div id="gameScreen" class="screen hidden">
+            <div class="hud">
+                <div>Pontuação: <span id="score">0</span></div>
+                <div>Vidas: <span id="lives">3</span></div>
+                <div>Onda: <span id="wave">1</span></div>
+            </div>
+            <canvas id="gameCanvas" width="800" height="500"></canvas>
+        </div>
+        
+        <div id="gameOverScreen" class="screen hidden">
+            <h1>Fim de Jogo</h1>
+            <p>Sua pontuação: <span id="finalScore">0</span></p>
+            <button id="restartButton">Jogar Novamente</button>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

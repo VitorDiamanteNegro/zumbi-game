@@ -1,1 +1,88 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #121212;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.container {
+    text-align: center;
+}
+
+.screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+
+.hidden {
+    display: none;
+}
+
+h1 {
+    color: #ff0000;
+    font-size: 3rem;
+    text-shadow: 2px 2px 4px #000;
+}
+
+button {
+    padding: 15px 30px;
+    font-size: 1.2rem;
+    background-color: #ff0000;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+button:hover {
+    background-color: #cc0000;
+}
+
+.instructions {
+    margin-top: 20px;
+    background-color: #222;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 500px;
+}
+
+.instructions h3 {
+    margin-bottom: 10px;
+    color: #ff0000;
+}
+
+#gameCanvas {
+    background-color: #1e1e1e;
+    border: 2px solid #ff0000;
+    border-radius: 5px;
+    margin-top: 10px;
+}
+
+.hud {
+    display: flex;
+    justify-content: space-between;
+    width: 800px;
+    margin-bottom: 10px;
+    background-color: #222;
+    padding: 10px;
+    border-radius: 5px;
+}
+
+.hud div {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
