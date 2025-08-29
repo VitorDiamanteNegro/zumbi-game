@@ -51,18 +51,33 @@ class Player {
     constructor() {
         this.x = mapSize / 2;
         this.y = mapSize / 2;
-        this.width = 40;
-        this.height = 40;
+        this.width = 32;
+        this.height = 48;
         this.speed = 5;
         this.color = '#3498db';
+        this.direction = 0; // 0: frente, 1: esquerda, 2: direita, 3: costas
+        this.lastShotTime = 0;
+        this.shootCooldown = 200; // ms entre tiros
     }
     
     update() {
-        // Movimento baseado nas teclas pressionadas
-        if (keys['ArrowUp'] || keys['w'] || keys['W']) this.y -= this.speed;
-        if (keys['ArrowDown'] || keys['s'] || keys['S']) this.y += this.speed;
-        if (keys['ArrowLeft'] || keys['a'] || keys['A']) this.x -= this.speed;
-        if (keys['ArrowRight'] || keys['d'] || keys['D']) this.x += this.speed;
+        // Determinar direção com base no movimento
+        if (keys['ArrowUp'] || keys['w'] || keys['W']) {
+            this.y -= this.speed;
+            this.direction = 3; // Costas
+        }
+        if (keys['ArrowDown'] || keys['s'] || keys['S']) {
+            this.y += this.speed;
+            this.direction = 0; // Frente
+        }
+        if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
+            this.x -= this.speed;
+            this.direction = 1; // Esquerda
+        }
+        if (keys['ArrowRight'] || keys['d'] || keys['D']) {
+            this.x += this.speed;
+            this.direction = 2; // Direita
+        }
         
         // Limitar jogador ao mapa
         this.x = Math.max(0, Math.min(mapSize - this.width, this.x));
@@ -74,23 +89,63 @@ class Player {
     }
     
     draw() {
-        ctx.fillStyle = this.color;
-        ctx.fillRect(
-            this.x - worldOffset.x, 
-            this.y - worldOffset.y, 
-            this.width, 
-            this.height
-        );
+        const screenX = this.x - worldOffset.x;
+        const screenY = this.y - worldOffset.y;
         
-        // Desenhar direção do jogador (um "nariz" para indicar para onde está virado)
-        ctx.fillStyle = '#ff0000';
-        ctx.beginPath();
-        ctx.arc(
-            this.x - worldOffset.x + this.width / 2, 
-            this.y - worldOffset.y - 10, 
-            5, 0, Math.PI * 2
-        );
-        ctx.fill();
+        // Desenhar personagem pixelizado
+        ctx.fillStyle = '#21618C'; // Azul escuro para contornos
+        
+        // Desenhar pernas
+        ctx.fillRect(screenX + 8, screenY + 32, 5, 16);
+        ctx.fillRect(screenX + 19, screenY + 32, 5, 16);
+        
+        // Desenhar corpo
+        ctx.fillStyle = '#3498DB'; // Azul principal
+        ctx.fillRect(screenX + 6, screenY + 16, 20, 16);
+        
+        // Desenhar cabeça
+        ctx.fillRect(screenX + 10, screenY + 6, 12, 12);
+        
+        // Desenhar braços baseado na direção
+        ctx.fillStyle = '#21618C'; // Azul escuro
+        if (this.direction === 1) { // Esquerda
+            ctx.fillRect(screenX, screenY + 16, 6, 5);
+            ctx.fillRect(screenX + 26, screenY + 20, 6, 5);
+        } else if (this.direction === 2) { // Direita
+            ctx.fillRect(screenX, screenY + 20, 6, 5);
+            ctx.fillRect(screenX + 26, screenY + 16, 6, 5);
+        } else { // Frente ou costas
+            ctx.fillRect(screenX, screenY + 20, 6, 5);
+            ctx.fillRect(screenX + 26, screenY + 20, 6, 5);
+        }
+        
+        // Desenhar arma (quando está atirando)
+        if (Date.now() - this.lastShotTime < 100) {
+            ctx.fillStyle = '#777';
+            if (this.direction === 1) { // Esquerda
+                ctx.fillRect(screenX - 8, screenY + 18, 8, 3);
+            } else if (this.direction === 2) { // Direita
+                ctx.fillRect(screenX + 32, screenY + 18, 8, 3);
+            } else if (this.direction === 3) { // Costas
+                ctx.fillRect(screenX + 12, screenY - 8, 3, 8);
+            } else { // Frente
+                ctx.fillRect(screenX + 15, screenY + 48, 3, 8);
+            }
+        }
+        
+        // Desenhar olhos
+        ctx.fillStyle = '#FFF';
+        ctx.fillRect(screenX + 12, screenY + 10, 2, 2);
+        ctx.fillRect(screenX + 18, screenY + 10, 2, 2);
+        
+        // Desenhar boca baseado na direção
+        if (this.direction === 0) { // Frente
+            ctx.fillRect(screenX + 14, screenY + 16, 4, 1);
+        } else if (this.direction === 3) { // Costas
+            ctx.fillRect(screenX + 14, screenY + 14, 4, 1);
+        } else {
+            ctx.fillRect(screenX + 14, screenY + 15, 4, 1);
+        }
     }
 }
 
@@ -403,6 +458,18 @@ function shoot(event) {
     const rect = gameCanvas.getBoundingClientRect();
     const mouseX = event.clientX - rect.left + worldOffset.x;
     const mouseY = event.clientY - rect.top + worldOffset.y;
+    
+    // Atualizar direção do jogador baseado na posição do mouse
+    const dx = mouseX - (player.x + player.width/2);
+    const dy = mouseY - (player.y + player.height/2);
+    
+    if (Math.abs(dx) > Math.abs(dy)) {
+        player.direction = dx > 0 ? 2 : 1; // Direita ou esquerda
+    } else {
+        player.direction = dy > 0 ? 0 : 3; // Frente ou costas
+    }
+    
+    player.lastShotTime = Date.now();
     
     if (activePower && powerUses > 0) {
         // Usar poder especial
