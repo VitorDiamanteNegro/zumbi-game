@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zombie Survival - Tela Cheia</title>
+    <title>Zombie Survival - Poderes Acumulativos</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -20,6 +20,7 @@
                 <p>Clique para atirar na direção do mouse</p>
                 <p>Não deixe os zumbis chegarem perto de você!</p>
                 <p>A cada 5 níveis, escolha um poder especial</p>
+                <p>Os poderes se acumulam e ficam ativos permanentemente!</p>
             </div>
         </div>
         
@@ -42,14 +43,17 @@
                     <div class="power-option" data-power="fire">
                         <h3>BOLA DE FOGO</h3>
                         <p>Atira uma bola de fogo que causa dano em área</p>
+                        <div class="power-level">Nível: <span id="fire-level">0</span></div>
                     </div>
                     <div class="power-option" data-power="lightning">
                         <h3>RAIO ELÉTRICO</h3>
                         <p>Um raio que acerta até 3 zumbis consecutivos</p>
+                        <div class="power-level">Nível: <span id="lightning-level">0</span></div>
                     </div>
                     <div class="power-option" data-power="freeze">
                         <h3>CONGELAMENTO</h3>
                         <p>Congela todos os zumbis na tela por 5 segundos</p>
+                        <div class="power-level">Nível: <span id="freeze-level">0</span></div>
                     </div>
                 </div>
             </div>

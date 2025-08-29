@@ -15,6 +15,9 @@ const finalLevelDisplay = document.getElementById('finalLevel');
 const levelReachedDisplay = document.getElementById('levelReached');
 const powerOptions = document.querySelectorAll('.power-option');
 const powerInfo = document.getElementById('powerInfo');
+const fireLevelDisplay = document.getElementById('fire-level');
+const lightningLevelDisplay = document.getElementById('lightning-level');
+const freezeLevelDisplay = document.getElementById('freeze-level');
 
 // Contexto do canvas
 const ctx = gameCanvas.getContext('2d');
@@ -39,12 +42,17 @@ let isGameOver = false;
 let worldOffset = { x: 0, y: 0 };
 let keys = {};
 let player = null;
-let mapSize = 5000; // Tamanho do mapa infinito
+let mapSize = 5000;
 let zombiesKilledThisLevel = 0;
 let zombiesNeededForNextLevel = 10;
-let activePower = null;
-let powerUses = 0;
 let freezeTime = 0;
+
+// Sistema de poderes acumulativos
+let powers = {
+    fire: { level: 0, damage: 1, radius: 100 },
+    lightning: { level: 0, chains: 1, maxChains: 3 },
+    freeze: { level: 0, duration: 5, cooldown: 0 }
+};
 
 // Classes do jogo
 class Player {
@@ -55,37 +63,46 @@ class Player {
         this.height = 48;
         this.speed = 5;
         this.color = '#3498db';
-        this.direction = 0; // 0: frente, 1: esquerda, 2: direita, 3: costas
+        this.direction = 0;
         this.lastShotTime = 0;
-        this.shootCooldown = 200; // ms entre tiros
+        this.shootCooldown = 200;
+        this.lastFreezeTime = 0;
+        this.freezeCooldown = 30000; // 30 segundos de cooldown para congelamento
     }
     
     update() {
-        // Determinar direção com base no movimento
+        // Movimento
         if (keys['ArrowUp'] || keys['w'] || keys['W']) {
             this.y -= this.speed;
-            this.direction = 3; // Costas
+            this.direction = 3;
         }
         if (keys['ArrowDown'] || keys['s'] || keys['S']) {
             this.y += this.speed;
-            this.direction = 0; // Frente
+            this.direction = 0;
         }
         if (keys['ArrowLeft'] || keys['a'] || keys['A']) {
             this.x -= this.speed;
-            this.direction = 1; // Esquerda
+            this.direction = 1;
         }
         if (keys['ArrowRight'] || keys['d'] || keys['D']) {
             this.x += this.speed;
-            this.direction = 2; // Direita
+            this.direction = 2;
         }
         
-        // Limitar jogador ao mapa
+        // Limites do mapa
         this.x = Math.max(0, Math.min(mapSize - this.width, this.x));
         this.y = Math.max(0, Math.min(mapSize - this.height, this.y));
         
-        // Atualizar offset do mundo para criar efeito de câmera
+        // Atualizar offset da câmera
         worldOffset.x = this.x - gameCanvas.width / 2 + this.width / 2;
         worldOffset.y = this.y - gameCanvas.height / 2 + this.height / 2;
+        
+        // Atualizar cooldown do congelamento
+        if (powers.freeze.level > 0 && Date.now() - this.lastFreezeTime > this.freezeCooldown) {
+            powers.freeze.cooldown = 0;
+        } else if (powers.freeze.cooldown > 0) {
+            powers.freeze.cooldown = Math.max(0, this.freezeCooldown - (Date.now() - this.lastFreezeTime));
+        }
     }
     
     draw() {
@@ -93,59 +110,132 @@ class Player {
         const screenY = this.y - worldOffset.y;
         
         // Desenhar personagem pixelizado
-        ctx.fillStyle = '#21618C'; // Azul escuro para contornos
-        
-        // Desenhar pernas
+        ctx.fillStyle = '#21618C';
         ctx.fillRect(screenX + 8, screenY + 32, 5, 16);
         ctx.fillRect(screenX + 19, screenY + 32, 5, 16);
         
-        // Desenhar corpo
-        ctx.fillStyle = '#3498DB'; // Azul principal
+        ctx.fillStyle = '#3498DB';
         ctx.fillRect(screenX + 6, screenY + 16, 20, 16);
-        
-        // Desenhar cabeça
         ctx.fillRect(screenX + 10, screenY + 6, 12, 12);
         
-        // Desenhar braços baseado na direção
-        ctx.fillStyle = '#21618C'; // Azul escuro
-        if (this.direction === 1) { // Esquerda
+        ctx.fillStyle = '#21618C';
+        if (this.direction === 1) {
             ctx.fillRect(screenX, screenY + 16, 6, 5);
             ctx.fillRect(screenX + 26, screenY + 20, 6, 5);
-        } else if (this.direction === 2) { // Direita
+        } else if (this.direction === 2) {
             ctx.fillRect(screenX, screenY + 20, 6, 5);
             ctx.fillRect(screenX + 26, screenY + 16, 6, 5);
-        } else { // Frente ou costas
+        } else {
             ctx.fillRect(screenX, screenY + 20, 6, 5);
             ctx.fillRect(screenX + 26, screenY + 20, 6, 5);
         }
         
-        // Desenhar arma (quando está atirando)
         if (Date.now() - this.lastShotTime < 100) {
             ctx.fillStyle = '#777';
-            if (this.direction === 1) { // Esquerda
+            if (this.direction === 1) {
                 ctx.fillRect(screenX - 8, screenY + 18, 8, 3);
-            } else if (this.direction === 2) { // Direita
+            } else if (this.direction === 2) {
                 ctx.fillRect(screenX + 32, screenY + 18, 8, 3);
-            } else if (this.direction === 3) { // Costas
+            } else if (this.direction === 3) {
                 ctx.fillRect(screenX + 12, screenY - 8, 3, 8);
-            } else { // Frente
+            } else {
                 ctx.fillRect(screenX + 15, screenY + 48, 3, 8);
             }
         }
         
-        // Desenhar olhos
         ctx.fillStyle = '#FFF';
         ctx.fillRect(screenX + 12, screenY + 10, 2, 2);
         ctx.fillRect(screenX + 18, screenY + 10, 2, 2);
         
-        // Desenhar boca baseado na direção
-        if (this.direction === 0) { // Frente
+        if (this.direction === 0) {
             ctx.fillRect(screenX + 14, screenY + 16, 4, 1);
-        } else if (this.direction === 3) { // Costas
+        } else if (this.direction === 3) {
             ctx.fillRect(screenX + 14, screenY + 14, 4, 1);
         } else {
             ctx.fillRect(screenX + 14, screenY + 15, 4, 1);
         }
+        
+        // Desenhar indicador de poderes ativos
+        this.drawActivePowers(screenX, screenY);
+    }
+    
+    drawActivePowers(x, y) {
+        // Desenhar ícones de poderes ativos acima do personagem
+        let powerCount = 0;
+        
+        if (powers.fire.level > 0) {
+            ctx.fillStyle = '#ff5500';
+            ctx.beginPath();
+            ctx.arc(x + this.width/2, y - 15 - (powerCount * 8), 4, 0, Math.PI * 2);
+            ctx.fill();
+            powerCount++;
+        }
+        
+        if (powers.lightning.level > 0) {
+            ctx.fillStyle = '#ffff00';
+            ctx.beginPath();
+            ctx.arc(x + this.width/2, y - 15 - (powerCount * 8), 4, 0, Math.PI * 2);
+            ctx.fill();
+            powerCount++;
+        }
+        
+        if (powers.freeze.level > 0) {
+            ctx.fillStyle = '#00aaff';
+            ctx.beginPath();
+            ctx.arc(x + this.width/2, y - 15 - (powerCount * 8), 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+    }
+    
+    useFreezePower() {
+        if (powers.freeze.level > 0 && powers.freeze.cooldown === 0) {
+            // Congelar todos os zumbis
+            for (const zombie of zombies) {
+                zombie.isFrozen = true;
+                zombie.frozenTime = 0;
+                zombie.color = '#00aaff';
+            }
+            
+            this.lastFreezeTime = Date.now();
+            powers.freeze.cooldown = this.freezeCooldown;
+            
+            // Efeito visual de congelamento
+            this.createFreezeEffect();
+            
+            return true;
+        }
+        return false;
+    }
+    
+    createFreezeEffect() {
+        // Criar efeito visual de congelamento
+        const effect = {
+            x: this.x,
+            y: this.y,
+            radius: 0,
+            maxRadius: 500,
+            color: '#00aaff',
+            alpha: 0.5,
+            update: function() {
+                this.radius += 20;
+                this.alpha -= 0.02;
+                return this.radius < this.maxRadius && this.alpha > 0;
+            },
+            draw: function() {
+                const screenX = this.x - worldOffset.x;
+                const screenY = this.y - worldOffset.y;
+                
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        };
+        
+        // Adicionar efeito à lista de efeitos especiais
+        specialAttacks.push(effect);
     }
 }
 
@@ -154,27 +244,14 @@ class Zombie {
         this.width = 30;
         this.height = 30;
         
-        // Spawnar zumbis fora da tela
         let side = Math.floor(Math.random() * 4);
         let spawnX, spawnY;
         
         switch(side) {
-            case 0: // Topo
-                spawnX = Math.random() * mapSize;
-                spawnY = -this.height;
-                break;
-            case 1: // Direita
-                spawnX = mapSize;
-                spawnY = Math.random() * mapSize;
-                break;
-            case 2: // Baixo
-                spawnX = Math.random() * mapSize;
-                spawnY = mapSize;
-                break;
-            case 3: // Esquerda
-                spawnX = -this.width;
-                spawnY = Math.random() * mapSize;
-                break;
+            case 0: spawnX = Math.random() * mapSize; spawnY = -this.height; break;
+            case 1: spawnX = mapSize; spawnY = Math.random() * mapSize; break;
+            case 2: spawnX = Math.random() * mapSize; spawnY = mapSize; break;
+            case 3: spawnX = -this.width; spawnY = Math.random() * mapSize; break;
         }
         
         this.x = spawnX;
@@ -183,12 +260,13 @@ class Zombie {
         this.color = `hsl(${Math.random() * 60}, 100%, 30%)`;
         this.isFrozen = false;
         this.frozenTime = 0;
+        this.health = 1 + Math.floor(level / 3); // Zumbis ficam mais fortes a cada 3 níveis
     }
     
     update() {
         if (this.isFrozen) {
             this.frozenTime++;
-            if (this.frozenTime > 300) { // 5 segundos a 60fps
+            if (this.frozenTime > 300) {
                 this.isFrozen = false;
                 this.frozenTime = 0;
                 this.color = `hsl(${Math.random() * 60}, 100%, 30%)`;
@@ -196,7 +274,6 @@ class Zombie {
             return;
         }
         
-        // Mover em direção ao jogador
         const dx = player.x - this.x;
         const dy = player.y - this.y;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -204,7 +281,6 @@ class Zombie {
         this.x += (dx / dist) * this.speed;
         this.y += (dy / dist) * this.speed;
         
-        // Verificar colisão com o jogador
         if (
             this.x < player.x + player.width &&
             this.x + this.width > player.x &&
@@ -226,7 +302,6 @@ class Zombie {
         const screenX = this.x - worldOffset.x;
         const screenY = this.y - worldOffset.y;
         
-        // Só desenhar se estiver na tela
         if (
             screenX + this.width > 0 && 
             screenX < gameCanvas.width &&
@@ -236,36 +311,59 @@ class Zombie {
             ctx.fillStyle = this.isFrozen ? '#00aaff' : this.color;
             ctx.fillRect(screenX, screenY, this.width, this.height);
             
-            // Desenhar rosto de zumbi
             ctx.fillStyle = this.isFrozen ? '#ffffff' : '#000';
-            ctx.fillRect(screenX + 5, screenY + 7, 5, 5); // Olho esquerdo
-            ctx.fillRect(screenX + 20, screenY + 7, 5, 5); // Olho direito
-            ctx.fillRect(screenX + 10, screenY + 20, 10, 3); // Boca
+            ctx.fillRect(screenX + 5, screenY + 7, 5, 5);
+            ctx.fillRect(screenX + 20, screenY + 7, 5, 5);
+            ctx.fillRect(screenX + 10, screenY + 20, 10, 3);
+            
+            // Barra de vida para zumbis com mais de 1 de saúde
+            if (this.health > 1) {
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(screenX, screenY - 5, this.width, 3);
+                
+                ctx.fillStyle = '#00ff00';
+                ctx.fillRect(screenX, screenY - 5, (this.width * (this.health / (1 + Math.floor(level / 3)))), 3);
+            }
         }
+    }
+    
+    takeDamage(amount = 1) {
+        this.health -= amount;
+        return this.health <= 0;
     }
 }
 
 class Bullet {
-    constructor(x, y, targetX, targetY, isSpecial = false, powerType = null) {
+    constructor(x, y, targetX, targetY, powerType = null) {
         this.x = x;
         this.y = y;
         
-        // Calcular direção
         const dx = targetX - x;
         const dy = targetY - y;
         const dist = Math.sqrt(dx * dx + dy * dy);
         
         this.dx = (dx / dist) * 10;
         this.dy = (dy / dist) * 10;
-        this.radius = isSpecial ? 8 : 5;
-        this.color = isSpecial ? 
-            (powerType === 'fire' ? '#ff5500' : 
-             powerType === 'lightning' ? '#ffff00' : '#55aaff') : 
-            '#ffff00';
-        this.isSpecial = isSpecial;
         this.powerType = powerType;
         this.distance = 0;
-        this.maxDistance = 300; // Distância máxima que uma bala pode percorrer
+        this.maxDistance = 300;
+        
+        // Configurações baseadas no poder
+        if (powerType === 'fire') {
+            this.radius = 8;
+            this.color = '#ff5500';
+            this.damage = powers.fire.damage;
+            this.explosionRadius = powers.fire.radius;
+        } else if (powerType === 'lightning') {
+            this.radius = 6;
+            this.color = '#ffff00';
+            this.chains = powers.lightning.chains;
+            this.chainHits = 0;
+            this.chainTargets = [];
+        } else {
+            this.radius = 5;
+            this.color = '#ffff00';
+        }
     }
     
     update() {
@@ -273,12 +371,10 @@ class Bullet {
         this.y += this.dy;
         this.distance += Math.sqrt(this.dx * this.dx + this.dy * this.dy);
         
-        // Remover balas que viajaram muito
         if (this.distance > this.maxDistance) {
             return true;
         }
         
-        // Verificar colisões com zumbis
         for (let i = zombies.length - 1; i >= 0; i--) {
             const zombie = zombies[i];
             if (
@@ -287,32 +383,62 @@ class Bullet {
                 this.y > zombie.y &&
                 this.y < zombie.y + zombie.height
             ) {
-                // Colisão detectada
-                if (this.isSpecial) {
+                if (this.powerType) {
                     this.handleSpecialPower(zombie, i);
                 } else {
-                    zombies.splice(i, 1);
-                    score += 10;
-                    zombiesKilledThisLevel++;
+                    if (zombie.takeDamage()) {
+                        zombies.splice(i, 1);
+                        score += 10;
+                        zombiesKilledThisLevel++;
+                    }
                 }
                 
                 scoreDisplay.textContent = score;
                 zombiesCountDisplay.textContent = zombies.length;
                 
-                // Verificar se o jogador avançou de nível
                 if (zombiesKilledThisLevel >= zombiesNeededForNextLevel) {
                     levelUp();
                 }
                 
-                // Balas normais desaparecem após acertar
-                if (!this.isSpecial) {
+                if (!this.powerType || this.powerType === 'fire') {
                     return true;
                 }
                 
-                // Alguns poderes continuam após acertar
                 if (this.powerType === 'lightning') {
-                    this.lightningHits = (this.lightningHits || 0) + 1;
-                    if (this.lightningHits >= 3) {
+                    this.chainHits++;
+                    this.chainTargets.push(zombie);
+                    
+                    if (this.chainHits >= this.chains) {
+                        return true;
+                    }
+                    
+                    // Encontrar próximo alvo para a corrente
+                    let nextZombie = null;
+                    let minDist = Infinity;
+                    
+                    for (const otherZombie of zombies) {
+                        if (!this.chainTargets.includes(otherZombie)) {
+                            const dist = Math.sqrt(
+                                Math.pow(otherZombie.x - zombie.x, 2) + 
+                                Math.pow(otherZombie.y - zombie.y, 2)
+                            );
+                            
+                            if (dist < minDist) {
+                                minDist = dist;
+                                nextZombie = otherZombie;
+                            }
+                        }
+                    }
+                    
+                    if (nextZombie) {
+                        // Redirecionar para o próximo zumbi
+                        const dx = nextZombie.x - this.x;
+                        const dy = nextZombie.y - this.y;
+                        const dist = Math.sqrt(dx * dx + dy * dy);
+                        
+                        this.dx = (dx / dist) * 10;
+                        this.dy = (dy / dist) * 10;
+                    } else {
                         return true;
                     }
                 }
@@ -327,7 +453,7 @@ class Bullet {
     handleSpecialPower(zombie, index) {
         switch(this.powerType) {
             case 'fire':
-                // Fogo causa dano em área
+                // Explosão de fogo
                 for (let j = zombies.length - 1; j >= 0; j--) {
                     const otherZombie = zombies[j];
                     const dist = Math.sqrt(
@@ -335,34 +461,62 @@ class Bullet {
                         Math.pow(otherZombie.y - zombie.y, 2)
                     );
                     
-                    if (dist < 100) { // Raio de explosão
-                        zombies.splice(j, 1);
-                        score += 10;
-                        zombiesKilledThisLevel++;
+                    if (dist < this.explosionRadius) {
+                        if (otherZombie.takeDamage(this.damage)) {
+                            zombies.splice(j, 1);
+                            score += 10;
+                            zombiesKilledThisLevel++;
+                        }
                     }
                 }
-                return true; // Bala de fogo some após explosão
+                
+                // Efeito visual de explosão
+                this.createExplosionEffect();
+                return true;
                 
             case 'lightning':
-                // Raio já trata a colisão normalmente (remove 1 zumbi)
-                zombies.splice(index, 1);
-                score += 10;
-                zombiesKilledThisLevel++;
-                break;
-                
-            case 'freeze':
-                // Congela o zumbi mas não o mata
-                zombie.isFrozen = true;
-                zombie.color = '#00aaff';
+                if (zombie.takeDamage()) {
+                    zombies.splice(index, 1);
+                    score += 10;
+                    zombiesKilledThisLevel++;
+                }
                 break;
         }
+    }
+    
+    createExplosionEffect() {
+        const effect = {
+            x: this.x,
+            y: this.y,
+            radius: 0,
+            maxRadius: this.explosionRadius,
+            color: '#ff5500',
+            alpha: 0.7,
+            update: function() {
+                this.radius += 10;
+                this.alpha -= 0.05;
+                return this.radius < this.maxRadius && this.alpha > 0;
+            },
+            draw: function() {
+                const screenX = this.x - worldOffset.x;
+                const screenY = this.y - worldOffset.y;
+                
+                ctx.globalAlpha = this.alpha;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
+                ctx.fillStyle = this.color;
+                ctx.fill();
+                ctx.globalAlpha = 1;
+            }
+        };
+        
+        specialAttacks.push(effect);
     }
     
     draw() {
         const screenX = this.x - worldOffset.x;
         const screenY = this.y - worldOffset.y;
         
-        // Só desenhar se estiver na tela
         if (
             screenX + this.radius > 0 && 
             screenX - this.radius < gameCanvas.width &&
@@ -374,18 +528,29 @@ class Bullet {
             ctx.arc(screenX, screenY, this.radius, 0, Math.PI * 2);
             ctx.fill();
             
-            // Efeitos especiais para poderes
-            if (this.isSpecial) {
-                if (this.powerType === 'fire') {
-                    ctx.fillStyle = 'rgba(255, 150, 0, 0.5)';
+            if (this.powerType === 'fire') {
+                ctx.fillStyle = 'rgba(255, 150, 0, 0.5)';
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, this.radius + 3, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (this.powerType === 'lightning') {
+                ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(screenX, screenY, this.radius + 2, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // Desenhar efeito de raio
+                if (this.chainTargets.length > 0) {
+                    const lastTarget = this.chainTargets[this.chainTargets.length - 1];
+                    const targetX = lastTarget.x + lastTarget.width/2 - worldOffset.x;
+                    const targetY = lastTarget.y + lastTarget.height/2 - worldOffset.y;
+                    
                     ctx.beginPath();
-                    ctx.arc(screenX, screenY, this.radius + 3, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (this.powerType === 'lightning') {
-                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.7)';
+                    ctx.moveTo(screenX, screenY);
+                    ctx.lineTo(targetX, targetY);
+                    ctx.strokeStyle = 'rgba(255, 255, 0, 0.5)';
                     ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(screenX, screenY, this.radius + 2, 0, Math.PI * 2);
                     ctx.stroke();
                 }
             }
@@ -410,9 +575,14 @@ function startGame() {
     worldOffset = { x: 0, y: 0 };
     zombiesKilledThisLevel = 0;
     zombiesNeededForNextLevel = 10;
-    activePower = null;
-    powerUses = 0;
     freezeTime = 0;
+    
+    // Resetar poderes
+    powers = {
+        fire: { level: 0, damage: 1, radius: 100 },
+        lightning: { level: 0, chains: 1, maxChains: 3 },
+        freeze: { level: 0, duration: 5, cooldown: 0 }
+    };
     
     player = new Player();
     
@@ -421,8 +591,8 @@ function startGame() {
     levelDisplay.textContent = level;
     zombiesCountDisplay.textContent = zombies.length;
     updatePowerInfo();
+    updatePowerLevels();
     
-    // Iniciar loops do jogo
     lastTime = performance.now();
     gameInterval = requestAnimationFrame(gameLoop);
     zombieSpawnInterval = setInterval(spawnZombie, 1000);
@@ -442,7 +612,6 @@ function endGame() {
 function spawnZombie() {
     if (isGameOver) return;
     
-    // Aumentar número de zumbis baseado no nível
     const zombiesToSpawn = Math.min(level, 10);
     
     for (let i = 0; i < zombiesToSpawn; i++) {
@@ -459,45 +628,56 @@ function shoot(event) {
     const mouseX = event.clientX - rect.left + worldOffset.x;
     const mouseY = event.clientY - rect.top + worldOffset.y;
     
-    // Atualizar direção do jogador baseado na posição do mouse
     const dx = mouseX - (player.x + player.width/2);
     const dy = mouseY - (player.y + player.height/2);
     
     if (Math.abs(dx) > Math.abs(dy)) {
-        player.direction = dx > 0 ? 2 : 1; // Direita ou esquerda
+        player.direction = dx > 0 ? 2 : 1;
     } else {
-        player.direction = dy > 0 ? 0 : 3; // Frente ou costas
+        player.direction = dy > 0 ? 0 : 3;
     }
     
     player.lastShotTime = Date.now();
     
-    if (activePower && powerUses > 0) {
-        // Usar poder especial
-        bullets.push(new Bullet(
-            player.x + player.width / 2, 
-            player.y + player.height / 2,
-            mouseX,
-            mouseY,
-            true,
-            activePower
-        ));
-        powerUses--;
+    // Verificar se é para usar poder de congelamento (botão direito)
+    if (event.button === 2 && player.useFreezePower()) {
         updatePowerInfo();
-        
-        // Se acabaram os usos, remover o poder
-        if (powerUses === 0) {
-            activePower = null;
-            updatePowerInfo();
-        }
-    } else {
-        // Tiro normal
-        bullets.push(new Bullet(
-            player.x + player.width / 2, 
-            player.y + player.height / 2,
-            mouseX,
-            mouseY
-        ));
+        return;
     }
+    
+    // Escolher aleatoriamente qual poder usar baseado nos níveis
+    let powerToUse = null;
+    const powerChances = [];
+    
+    if (powers.fire.level > 0) {
+        powerChances.push({ power: 'fire', chance: powers.fire.level * 0.2 });
+    }
+    
+    if (powers.lightning.level > 0) {
+        powerChances.push({ power: 'lightning', chance: powers.lightning.level * 0.2 });
+    }
+    
+    if (powerChances.length > 0) {
+        const totalChance = powerChances.reduce((sum, p) => sum + p.chance, 0);
+        const random = Math.random() * totalChance;
+        
+        let accumulated = 0;
+        for (const power of powerChances) {
+            accumulated += power.chance;
+            if (random <= accumulated) {
+                powerToUse = power.power;
+                break;
+            }
+        }
+    }
+    
+    bullets.push(new Bullet(
+        player.x + player.width / 2, 
+        player.y + player.height / 2,
+        mouseX,
+        mouseY,
+        powerToUse
+    ));
 }
 
 function levelUp() {
@@ -506,7 +686,6 @@ function levelUp() {
     zombiesNeededForNextLevel = 10 + (level * 2);
     levelDisplay.textContent = level;
     
-    // A cada 5 níveis, oferecer seleção de poder
     if (level % 5 === 0) {
         showPowerSelection();
     }
@@ -522,43 +701,65 @@ function showPowerSelection() {
 }
 
 function selectPower(powerType) {
-    activePower = powerType;
+    // Aumentar nível do poder selecionado
+    powers[powerType].level++;
     
-    // Definir número de usos baseado no poder
+    // Melhorar atributos do poder baseado no nível
     switch(powerType) {
         case 'fire':
-            powerUses = 5;
+            powers.fire.damage = 1 + Math.floor(powers.fire.level / 2);
+            powers.fire.radius = 100 + (powers.fire.level * 20);
             break;
         case 'lightning':
-            powerUses = 10;
+            powers.lightning.chains = Math.min(1 + powers.lightning.level, powers.lightning.maxChains);
             break;
         case 'freeze':
-            powerUses = 3;
+            powers.freeze.duration = 5 + (powers.freeze.level * 2);
             break;
     }
     
+    updatePowerLevels();
     updatePowerInfo();
     powerSelectionScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     
-    // Reiniciar loops do jogo
     lastTime = performance.now();
     gameInterval = requestAnimationFrame(gameLoop);
     zombieSpawnInterval = setInterval(spawnZombie, 1000);
 }
 
 function updatePowerInfo() {
-    if (activePower) {
-        let powerName = '';
-        switch(activePower) {
-            case 'fire': powerName = 'Bola de Fogo'; break;
-            case 'lightning': powerName = 'Raio Elétrico'; break;
-            case 'freeze': powerName = 'Congelamento'; break;
-        }
-        powerInfo.textContent = `PODER: ${powerName} (${powerUses})`;
-    } else {
-        powerInfo.textContent = 'PODER: NENHUM';
+    let powerText = "PODER: ";
+    const activePowers = [];
+    
+    if (powers.fire.level > 0) {
+        activePowers.push(`Fogo Nv.${powers.fire.level}`);
     }
+    
+    if (powers.lightning.level > 0) {
+        activePowers.push(`Raio Nv.${powers.lightning.level}`);
+    }
+    
+    if (powers.freeze.level > 0) {
+        const cooldownText = powers.freeze.cooldown > 0 ? 
+            ` (Recarregando: ${Math.ceil(powers.freeze.cooldown / 1000)}s)` : 
+            " (Pronto)";
+        activePowers.push(`Congelamento Nv.${powers.freeze.level}${cooldownText}`);
+    }
+    
+    if (activePowers.length > 0) {
+        powerText += activePowers.join(" | ");
+    } else {
+        powerText += "NENHUM";
+    }
+    
+    powerInfo.textContent = powerText;
+}
+
+function updatePowerLevels() {
+    fireLevelDisplay.textContent = powers.fire.level;
+    lightningLevelDisplay.textContent = powers.lightning.level;
+    freezeLevelDisplay.textContent = powers.freeze.level;
 }
 
 function gameLoop(timestamp) {
@@ -567,10 +768,9 @@ function gameLoop(timestamp) {
     const deltaTime = timestamp - lastTime;
     lastTime = timestamp;
     
-    // Limpar o canvas
     ctx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
     
-    // Desenhar fundo (grade para simular mapa infinito)
+    // Desenhar grade de fundo
     ctx.strokeStyle = '#333';
     ctx.lineWidth = 1;
     
@@ -612,6 +812,22 @@ function gameLoop(timestamp) {
         }
     }
     
+    // Atualizar e desenhar efeitos especiais
+    for (let i = specialAttacks.length - 1; i >= 0; i--) {
+        const shouldRemove = !specialAttacks[i].update();
+        if (shouldRemove) {
+            specialAttacks.splice(i, 1);
+        } else {
+            specialAttacks[i].draw();
+        }
+    }
+    
+    // Atualizar cooldown do congelamento
+    if (powers.freeze.level > 0 && powers.freeze.cooldown > 0) {
+        powers.freeze.cooldown = Math.max(0, player.freezeCooldown - (Date.now() - player.lastFreezeTime));
+        updatePowerInfo();
+    }
+    
     gameInterval = requestAnimationFrame(gameLoop);
 }
 
@@ -619,10 +835,21 @@ function gameLoop(timestamp) {
 startButton.addEventListener('click', startGame);
 restartButton.addEventListener('click', startGame);
 gameCanvas.addEventListener('click', shoot);
+gameCanvas.addEventListener('contextmenu', (e) => {
+    e.preventDefault(); // Prevenir menu de contexto
+    shoot(e);
+});
 
 // Controles de teclado
 window.addEventListener('keydown', (e) => {
     keys[e.key] = true;
+    
+    // Tecla Q para poder de congelamento
+    if (e.key === 'q' || e.key === 'Q') {
+        if (player.useFreezePower()) {
+            updatePowerInfo();
+        }
+    }
 });
 
 window.addEventListener('keyup', (e) => {
@@ -636,8 +863,42 @@ powerOptions.forEach(option => {
     });
 });
 
-// Redimensionar canvas quando a janela for redimensionada
+// Redimensionar canvas
 window.addEventListener('resize', resizeCanvas);
 
-// Inicializar o canvas
+// Inicializar
 resizeCanvas();
+
+// Desenhar indicador de poderes ativos na tela
+function drawActivePowersHUD() {
+    const container = document.createElement('div');
+    container.className = 'active-powers';
+    container.innerHTML = `
+        <div class="power-indicator">
+            <div class="power-icon fire-icon"></div>
+            <span>Fogo: Nv.${powers.fire.level}</span>
+            <div class="power-level-badge">${powers.fire.level}</div>
+        </div>
+        <div class="power-indicator">
+            <div class="power-icon lightning-icon"></div>
+            <span>Raio: Nv.${powers.lightning.level}</span>
+            <div class="power-level-badge">${powers.lightning.level}</div>
+        </div>
+        <div class="power-indicator">
+            <div class="power-icon freeze-icon"></div>
+            <span>Congelamento: Nv.${powers.freeze.level}</span>
+            <div class="power-level-badge">${powers.freeze.level}</div>
+        </div>
+    `;
+    
+    // Remover HUD anterior se existir
+    const oldHUD = document.querySelector('.active-powers');
+    if (oldHUD) {
+        oldHUD.remove();
+    }
+    
+    document.body.appendChild(container);
+}
+
+// Atualizar HUD de poderes
+setInterval(drawActivePowersHUD, 1000);

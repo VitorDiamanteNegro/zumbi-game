@@ -154,6 +154,7 @@ button:active {
     transition: all 0.3s;
     border: 2px solid #333;
     text-align: center;
+    position: relative;
 }
 
 .power-option:hover {
@@ -172,6 +173,14 @@ button:active {
 .power-option p {
     font-size: 1rem;
     color: #ccc;
+    margin-bottom: 10px;
+}
+
+.power-level {
+    font-size: 0.9rem;
+    color: #ffcc00;
+    font-weight: bold;
+    margin-top: 10px;
 }
 
 #powerSelectionScreen {
@@ -221,6 +230,56 @@ button:active {
     font-size: 1.8rem;
     margin: 15px 0;
     color: #fff;
+}
+
+/* Indicador de poderes ativos */
+.active-powers {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #333;
+}
+
+.power-indicator {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.power-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    border-radius: 50%;
+}
+
+.fire-icon {
+    background: #ff5500;
+}
+
+.lightning-icon {
+    background: #ffff00;
+}
+
+.freeze-icon {
+    background: #00aaff;
+}
+
+.power-level-badge {
+    background: #ffcc00;
+    color: #000;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    margin-left: 5px;
 }
 
 /* Responsividade */
@@ -274,5 +333,17 @@ button:active {
     
     .power-selection-container p, .game-over-container p {
         font-size: 1.2rem;
+    }
+    
+    .active-powers {
+        bottom: 5px;
+        left: 5px;
+        padding: 5px;
+        font-size: 0.8rem;
+    }
+    
+    .power-icon, .power-level-badge {
+        width: 16px;
+        height: 16px;
     }
 }
