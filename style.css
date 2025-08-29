@@ -4,136 +4,275 @@
     box-sizing: border-box;
 }
 
-body {
-    font-family: 'Arial', sans-serif;
-    background-color: #121212;
-    color: #fff;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+body, html {
+    width: 100%;
+    height: 100%;
     overflow: hidden;
+    font-family: 'Arial', sans-serif;
+    background-color: #000;
+    color: #fff;
 }
 
 .container {
-    text-align: center;
+    width: 100%;
+    height: 100%;
+    position: relative;
 }
 
 .screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 20px;
+    background: linear-gradient(to bottom, #1a1a1a, #0d0d0d);
 }
 
 .hidden {
     display: none;
 }
 
+#gameStartScreen {
+    background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 100 100"><rect width="100%" height="100%" fill="%230d0d0d"/><path d="M0,0 L100,100 M100,0 L0,100" stroke="%231a1a1a" stroke-width="0.5"/></svg>');
+    gap: 40px;
+}
+
+.title-container {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
 h1 {
     color: #ff0000;
-    font-size: 3rem;
-    text-shadow: 2px 2px 4px #000;
+    font-size: 4rem;
+    text-shadow: 3px 3px 6px #000;
+    margin-bottom: 10px;
+    letter-spacing: 3px;
+}
+
+#gameStartScreen p {
+    font-size: 1.5rem;
+    color: #ccc;
+    text-shadow: 1px 1px 2px #000;
 }
 
 button {
-    padding: 15px 30px;
-    font-size: 1.2rem;
-    background-color: #ff0000;
+    padding: 20px 40px;
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: linear-gradient(to bottom, #ff0000, #cc0000);
     color: white;
     border: none;
-    border-radius: 5px;
+    border-radius: 8px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    margin: 20px 0;
 }
 
 button:hover {
-    background-color: #cc0000;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.6);
+    background: linear-gradient(to bottom, #ff3333, #dd0000);
+}
+
+button:active {
+    transform: translateY(1px);
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4);
 }
 
 .instructions {
     margin-top: 20px;
-    background-color: #222;
-    padding: 15px;
-    border-radius: 8px;
-    max-width: 500px;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    border: 1px solid #333;
+    backdrop-filter: blur(5px);
 }
 
 .instructions h3 {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     color: #ff0000;
+    font-size: 1.5rem;
 }
 
-#gameCanvas {
-    background-color: #1e1e1e;
-    border: 2px solid #ff0000;
-    border-radius: 5px;
-    margin-top: 10px;
+.instructions p {
+    margin: 8px 0;
+    font-size: 1.1rem;
+    color: #ddd;
+}
+
+#gameScreen {
+    justify-content: flex-start;
+    padding-top: 10px;
+    background: #0a0a0a;
 }
 
 .hud {
     display: flex;
-    justify-content: space-between;
-    width: 800px;
-    margin-bottom: 10px;
-    background-color: #222;
-    padding: 10px;
-    border-radius: 5px;
+    justify-content: space-around;
+    width: 100%;
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-bottom: 2px solid #ff0000;
+    z-index: 10;
 }
 
-.hud div {
+.hud-item {
     font-size: 1.2rem;
     font-weight: bold;
+    color: #fff;
+    text-shadow: 1px 1px 2px #000;
+}
+
+#gameCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1;
 }
 
 .powers-container {
     display: flex;
-    gap: 20px;
-    margin-top: 20px;
+    gap: 30px;
+    margin-top: 40px;
 }
 
 .power-option {
-    background-color: #333;
-    padding: 20px;
-    border-radius: 8px;
-    width: 200px;
+    background: linear-gradient(to bottom, #222, #111);
+    padding: 25px;
+    border-radius: 10px;
+    width: 250px;
     cursor: pointer;
-    transition: transform 0.2s, background-color 0.2s;
+    transition: all 0.3s;
+    border: 2px solid #333;
+    text-align: center;
 }
 
 .power-option:hover {
-    transform: scale(1.05);
-    background-color: #444;
+    transform: translateY(-5px);
+    border-color: #ff9900;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(to bottom, #333, #222);
 }
 
 .power-option h3 {
     color: #ff9900;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    font-size: 1.4rem;
 }
 
 .power-option p {
-    font-size: 0.9rem;
+    font-size: 1rem;
+    color: #ccc;
 }
 
 #powerSelectionScreen {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    background-color: rgba(0, 0, 0, 0.8);
-    padding: 30px;
-    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.9);
     z-index: 100;
 }
 
-.minimap {
-    position: absolute;
-    bottom: 10px;
-    right: 10px;
-    width: 150px;
-    height: 150px;
-    background-color: rgba(0, 0, 0, 0.5);
-    border: 1px solid #fff;
-    z-index: 10;
+.power-selection-container {
+    background: rgba(30, 30, 30, 0.9);
+    padding: 40px;
+    border-radius: 15px;
+    border: 2px solid #ff9900;
+    text-align: center;
+    max-width: 90%;
+}
+
+.power-selection-container h1 {
+    margin-bottom: 20px;
+    font-size: 3rem;
+}
+
+.power-selection-container p {
+    font-size: 1.5rem;
+    margin-bottom: 30px;
+    color: #fff;
+}
+
+#gameOverScreen {
+    background-color: rgba(0, 0, 0, 0.9);
+    z-index: 100;
+}
+
+.game-over-container {
+    background: rgba(30, 30, 30, 0.9);
+    padding: 50px;
+    border-radius: 15px;
+    border: 2px solid #ff0000;
+    text-align: center;
+}
+
+.game-over-container h1 {
+    margin-bottom: 30px;
+    font-size: 3.5rem;
+}
+
+.game-over-container p {
+    font-size: 1.8rem;
+    margin: 15px 0;
+    color: #fff;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2.5rem;
+    }
+    
+    #gameStartScreen p {
+        font-size: 1.2rem;
+    }
+    
+    button {
+        padding: 15px 30px;
+        font-size: 1.2rem;
+    }
+    
+    .instructions {
+        max-width: 90%;
+        padding: 15px;
+    }
+    
+    .hud {
+        flex-wrap: wrap;
+        padding: 10px;
+    }
+    
+    .hud-item {
+        font-size: 1rem;
+        margin: 5px;
+    }
+    
+    .powers-container {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .power-option {
+        width: 100%;
+        max-width: 300px;
+    }
+    
+    .power-selection-container, .game-over-container {
+        padding: 20px;
+        width: 90%;
+    }
+    
+    .power-selection-container h1, .game-over-container h1 {
+        font-size: 2rem;
+    }
+    
+    .power-selection-container p, .game-over-container p {
+        font-size: 1.2rem;
+    }
 }

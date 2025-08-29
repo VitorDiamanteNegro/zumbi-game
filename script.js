@@ -14,9 +14,16 @@ const finalScoreDisplay = document.getElementById('finalScore');
 const finalLevelDisplay = document.getElementById('finalLevel');
 const levelReachedDisplay = document.getElementById('levelReached');
 const powerOptions = document.querySelectorAll('.power-option');
+const powerInfo = document.getElementById('powerInfo');
 
 // Contexto do canvas
 const ctx = gameCanvas.getContext('2d');
+
+// Ajustar canvas para tela cheia
+function resizeCanvas() {
+    gameCanvas.width = window.innerWidth;
+    gameCanvas.height = window.innerHeight;
+}
 
 // Variáveis do jogo
 let score = 0;
@@ -152,6 +159,7 @@ class Zombie {
             lives--;
             livesDisplay.textContent = lives;
             zombies.splice(zombies.indexOf(this), 1);
+            zombiesCountDisplay.textContent = zombies.length;
             
             if (lives <= 0) {
                 endGame();
@@ -357,6 +365,7 @@ function startGame() {
     livesDisplay.textContent = lives;
     levelDisplay.textContent = level;
     zombiesCountDisplay.textContent = zombies.length;
+    updatePowerInfo();
     
     // Iniciar loops do jogo
     lastTime = performance.now();
@@ -406,10 +415,12 @@ function shoot(event) {
             activePower
         ));
         powerUses--;
+        updatePowerInfo();
         
         // Se acabaram os usos, remover o poder
         if (powerUses === 0) {
             activePower = null;
+            updatePowerInfo();
         }
     } else {
         // Tiro normal
@@ -459,6 +470,7 @@ function selectPower(powerType) {
             break;
     }
     
+    updatePowerInfo();
     powerSelectionScreen.classList.add('hidden');
     gameScreen.classList.remove('hidden');
     
@@ -466,6 +478,20 @@ function selectPower(powerType) {
     lastTime = performance.now();
     gameInterval = requestAnimationFrame(gameLoop);
     zombieSpawnInterval = setInterval(spawnZombie, 1000);
+}
+
+function updatePowerInfo() {
+    if (activePower) {
+        let powerName = '';
+        switch(activePower) {
+            case 'fire': powerName = 'Bola de Fogo'; break;
+            case 'lightning': powerName = 'Raio Elétrico'; break;
+            case 'freeze': powerName = 'Congelamento'; break;
+        }
+        powerInfo.textContent = `PODER: ${powerName} (${powerUses})`;
+    } else {
+        powerInfo.textContent = 'PODER: NENHUM';
+    }
 }
 
 function gameLoop(timestamp) {
@@ -519,66 +545,7 @@ function gameLoop(timestamp) {
         }
     }
     
-    // Desenhar minimapa
-    drawMinimap();
-    
-    // Desenhar HUD com informações de poder ativo
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(10, 50, 200, 30);
-    ctx.fillStyle = '#fff';
-    ctx.font = '14px Arial';
-    
-    if (activePower) {
-        let powerName = '';
-        switch(activePower) {
-            case 'fire': powerName = 'Bola de Fogo'; break;
-            case 'lightning': powerName = 'Raio Elétrico'; break;
-            case 'freeze': powerName = 'Congelamento'; break;
-        }
-        ctx.fillText(`Poder: ${powerName} (${powerUses} usos)`, 20, 70);
-    } else {
-        ctx.fillText('Nenhum poder ativo', 20, 70);
-    }
-    
     gameInterval = requestAnimationFrame(gameLoop);
-}
-
-function drawMinimap() {
-    const minimapSize = 150;
-    const minimapScale = minimapSize / mapSize;
-    const minimapX = gameCanvas.width - minimapSize - 10;
-    const minimapY = 10;
-    
-    // Fundo do minimapa
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-    ctx.fillRect(minimapX, minimapY, minimapSize, minimapSize);
-    
-    // Área visível
-    const visibleAreaX = minimapX + worldOffset.x * minimapScale;
-    const visibleAreaY = minimapY + worldOffset.y * minimapScale;
-    const visibleAreaWidth = gameCanvas.width * minimapScale;
-    const visibleAreaHeight = gameCanvas.height * minimapScale;
-    
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
-    ctx.strokeRect(visibleAreaX, visibleAreaY, visibleAreaWidth, visibleAreaHeight);
-    
-    // Jogador no minimapa
-    ctx.fillStyle = '#3498db';
-    ctx.fillRect(
-        minimapX + player.x * minimapScale - 2,
-        minimapY + player.y * minimapScale - 2,
-        4, 4
-    );
-    
-    // Zumbis no minimapa
-    ctx.fillStyle = '#ff0000';
-    for (const zombie of zombies) {
-        ctx.fillRect(
-            minimapX + zombie.x * minimapScale - 1,
-            minimapY + zombie.y * minimapScale - 1,
-            2, 2
-        );
-    }
 }
 
 // Event listeners
@@ -601,3 +568,9 @@ powerOptions.forEach(option => {
         selectPower(option.dataset.power);
     });
 });
+
+// Redimensionar canvas quando a janela for redimensionada
+window.addEventListener('resize', resizeCanvas);
+
+// Inicializar o canvas
+resizeCanvas();

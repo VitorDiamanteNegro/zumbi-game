@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zombie Survival - Níveis e Poderes</title>
+    <title>Zombie Survival - Tela Cheia</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
         <div id="gameStartScreen" class="screen">
-            <h1>Zombie Survival</h1>
-            <p>Sobreviva às ondas de zumbis em um mapa infinito!</p>
-            <button id="startButton">Iniciar Jogo</button>
+            <div class="title-container">
+                <h1>ZOMBIE SURVIVAL</h1>
+                <p>Sobreviva às ondas de zumbis em um mapa infinito!</p>
+            </div>
+            <button id="startButton">INICIAR JOGO</button>
             <div class="instructions">
-                <h3>Instruções:</h3>
+                <h3>INSTRUÇÕES:</h3>
                 <p>Use WASD ou setas para mover</p>
                 <p>Clique para atirar na direção do mouse</p>
                 <p>Não deixe os zumbis chegarem perto de você!</p>
@@ -23,38 +25,43 @@
         
         <div id="gameScreen" class="screen hidden">
             <div class="hud">
-                <div>Pontuação: <span id="score">0</span></div>
-                <div>Vidas: <span id="lives">3</span></div>
-                <div>Nível: <span id="level">1</span></div>
-                <div>Zumbis: <span id="zombiesCount">0</span></div>
+                <div class="hud-item">PONTUAÇÃO: <span id="score">0</span></div>
+                <div class="hud-item">VIDAS: <span id="lives">3</span></div>
+                <div class="hud-item">NÍVEL: <span id="level">1</span></div>
+                <div class="hud-item">ZUMBIS: <span id="zombiesCount">0</span></div>
+                <div class="hud-item" id="powerInfo">PODER: NENHUM</div>
             </div>
-            <canvas id="gameCanvas" width="800" height="500"></canvas>
+            <canvas id="gameCanvas"></canvas>
         </div>
         
         <div id="powerSelectionScreen" class="screen hidden">
-            <h1>Escolha um Poder</h1>
-            <p>Parabéns! Você alcançou o nível <span id="levelReached">5</span></p>
-            <div class="powers-container">
-                <div class="power-option" data-power="fire">
-                    <h3>Bola de Fogo</h3>
-                    <p>Atira uma bola de fogo que causa dano em área</p>
-                </div>
-                <div class="power-option" data-power="lightning">
-                    <h3>Raio Elétrico</h3>
-                    <p>Um raio que acerta até 3 zumbis consecutivos</p>
-                </div>
-                <div class="power-option" data-power="freeze">
-                    <h3>Congelamento</h3>
-                    <p>Congela todos os zumbis na tela por 5 segundos</p>
+            <div class="power-selection-container">
+                <h1>ESCOLHA UM PODER</h1>
+                <p>Parabéns! Você alcançou o nível <span id="levelReached">5</span></p>
+                <div class="powers-container">
+                    <div class="power-option" data-power="fire">
+                        <h3>BOLA DE FOGO</h3>
+                        <p>Atira uma bola de fogo que causa dano em área</p>
+                    </div>
+                    <div class="power-option" data-power="lightning">
+                        <h3>RAIO ELÉTRICO</h3>
+                        <p>Um raio que acerta até 3 zumbis consecutivos</p>
+                    </div>
+                    <div class="power-option" data-power="freeze">
+                        <h3>CONGELAMENTO</h3>
+                        <p>Congela todos os zumbis na tela por 5 segundos</p>
+                    </div>
                 </div>
             </div>
         </div>
         
         <div id="gameOverScreen" class="screen hidden">
-            <h1>Fim de Jogo</h1>
-            <p>Sua pontuação: <span id="finalScore">0</span></p>
-            <p>Nível alcançado: <span id="finalLevel">1</span></p>
-            <button id="restartButton">Jogar Novamente</button>
+            <div class="game-over-container">
+                <h1>FIM DE JOGO</h1>
+                <p>SUA PONTUAÇÃO: <span id="finalScore">0</span></p>
+                <p>NÍVEL ALCANÇADO: <span id="finalLevel">1</span></p>
+                <button id="restartButton">JOGAR NOVAMENTE</button>
+            </div>
         </div>
     </div>
     
